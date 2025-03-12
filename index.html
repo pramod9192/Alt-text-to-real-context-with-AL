@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Caption Generator</title>
+    <style>
+        :root {
+            --primary-color: #23cca2;
+            --primary-dark: #1daa8a;
+            --primary-light: #C8E6C9;
+            --secondary-color: #2c3e50;
+            --success-color: #28a745;
+            --warning-color: #FFC107;
+            --danger-color: #F44336;
+            --text-primary: #2c3e50;
+            --text-secondary: #6C757D;
+            --border-radius: 12px;
+            --transition-speed: 0.3s;
+        }
+
+        /* General Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            color: var(--text-primary);
+            background-color: #F8F9FA;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type="file"] {
+            font-size: 1.1rem;
+            padding: 10px;
+            border-radius: 5px;
+            border: 2px solid #ccc;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 1.2rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color var(--transition-speed) ease;
+        }
+
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .response-container {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .response-box {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            word-wrap: break-word;
+        }
+
+        .caption-box {
+            background-color: #e0f7fa;
+        }
+
+        .gemini-box {
+            background-color: #ffecb3;
+            color: #6a4f1d;
+        }
+
+        .response-header {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            text-decoration: underline;
+        }
+
+        pre {
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* Hover and active styles for upload box */
+        .upload-box {
+            border: 2px dashed #DEE2E6;
+            transition: all var(--transition-speed) ease;
+            background: white;
+        }
+
+        .upload-box:hover {
+            border-color: var(--primary-color);
+            background: #F8F9FA;
+            transform: translateY(-2px);
+        }
+
+        /* Alert Styles */
+        .custom-alert {
+            background-color: #fff3cd;
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 1.25rem;
+        }
+
+        .alert-icon i {
+            font-size: 1.5rem;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+        }
+
+        /* Spinner styles */
+        .spinner-wrapper {
+            display: inline-block;
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            border-width: 0.25rem;
+        }
+
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-xl);
+            text-align: center;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            margin-bottom: var(--spacing-md);
+            animation: spin 1s linear infinite;
+        }
+
+        /* Add additional style for text areas like results, alerts, etc. */
+        .structured-text {
+            font-size: 1.1em;
+            line-height: 1.8;
+            color: var(--text-primary);
+            padding: 1.5rem;
+        }
+
+        .structured-text p {
+            margin-bottom: 1.2rem;
+        }
+
+        .structured-text strong {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload an Image to Generate a Caption</h1>
+        <form id="image-form" enctype="multipart/form-data">
+            <input type="file" id="image" name="image" accept="image/*" required>
+            <button type="submit">Generate Caption</button>
+        </form>
+
+        <div class="response-container">
+            <div id="caption" class="response-box caption-box">
+                <div class="response-header"> Caption:</div>
+                <p id="generated-caption">Waiting for image...</p>
+            </div>
+
+            <div id="gemini-response" class="response-box gemini-box">
+                <div class="response-header"> Response:</div>
+                <p id="generated-gemini-response">Waiting for  response...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('image-form');
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const formData = new FormData();
+            const imageFile = document.getElementById('image').files[0];
+            formData.append('image', imageFile);
+
+            try {
+                const response = await fetch('/generate-caption', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate caption');
+                }
+
+                const result = await response.json();
+
+                // Display the caption and Gemini API response
+                document.getElementById('generated-caption').innerText = result.caption;
+                document.getElementById('generated-gemini-response').innerText = result.gemini_response;
+
+                // Display the plain text response
+                document.getElementById('plain-text').innerText = `Generated Caption: ${result.caption}\n\nGemini Response: ${result.gemini_response}`;
+
+            } catch (error) {
+                console.error(error);
+                alert('Error occurred while processing the image.');
+            }
+        });
+    </script>
+</body>
+</html>
